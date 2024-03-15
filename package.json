@@ -1,0 +1,39 @@
+{
+  "name": "@neophi/sieve-cache",
+  "version": "1.0.0",
+  "description": "Performant Map based cache using the SIEVE algorithm for eviction.",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/NeoPhi/sieve-cache.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsc",
+    "build:test": "tsc --project tsconfig-test.json",
+    "pretest": "npm run clean && npm run build:test",
+    "test": "env NODE_ENV=test node --experimental-test-coverage --test dist/test",
+    "prepare": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "sieve",
+    "cache"
+  ],
+  "author": "Daniel Rinehart <danielr@neophi.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "^20.11.28",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.2"
+  }
+}
