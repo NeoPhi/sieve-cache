@@ -30,7 +30,7 @@
   ],
   "author": "Daniel Rinehart <danielr@neophi.com>",
   "license": "MIT",
-  "dependencies": {
+  "devDependencies": {
     "@tsconfig/node20": "^20.1.2",
     "@types/node": "^20.11.28",
     "rimraf": "^5.0.5",
