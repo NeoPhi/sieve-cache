@@ -43,8 +43,9 @@ export class SieveCache<K, V> implements Map<K, V> {
   #values: V[];
   #visited: Uint8Array;
   #map: Map<K, number>;
-  #hand = 0;
+  #handIndex = 0;
   #setBehavior: number;
+  #getNextFreeIndex: () => number;
 
   constructor(size: number, options: Partial<SieveCacheOptions> = {}) {
     this.#maxSize = size;
@@ -54,6 +55,7 @@ export class SieveCache<K, V> implements Map<K, V> {
     this.#keys = new Array(size + 1);
     this.#values = new Array(size + 1);
     this.#map = new Map();
+    this.#getNextFreeIndex = this.#getFreeIndex;
     const resolvedOptions = {
       existingSetBehavior: ExistingSetBehavior.VISITED_SKIP,
       ...options,
@@ -80,7 +82,8 @@ export class SieveCache<K, V> implements Map<K, V> {
     this.#keys = new Array(this.#maxSize + 1);
     this.#values = new Array(this.#maxSize + 1);
     this.#map = new Map();
-    this.#hand = 0;
+    this.#handIndex = 0;
+    this.#getNextFreeIndex = this.#getFreeIndex;
   }
 
   get(key: K): V | undefined {
@@ -102,9 +105,11 @@ export class SieveCache<K, V> implements Map<K, V> {
       return this;
     }
     if (this.#map.size === this.#maxSize) {
-      this.#evict();
+      index = this.#evict();
+    } else {
+      index = this.#getNextFreeIndex();
     }
-    index = this.#getHeadIndex();
+    this.#setHeadIndex(index);
     this.#values[index] = value;
     this.#keys[index] = key;
     this.#visited[index] = 0;
@@ -120,6 +125,10 @@ export class SieveCache<K, V> implements Map<K, V> {
     let index = this.#map.get(key);
     if (index !== undefined) {
       this.#removeNode(index);
+      (this.#values as any)[index] = undefined;
+      (this.#keys as any)[index] = undefined;
+      this.#map.delete(key);
+      this.#addToFree(index);
       return true;
     }
     return false;
@@ -186,29 +195,30 @@ export class SieveCache<K, V> implements Map<K, V> {
   }
 
   #evict() {
-    if (this.#hand === 0) {
-      this.#hand = this.#tailIndex;
+    if (this.#handIndex === 0) {
+      this.#handIndex = this.#tailIndex;
     }
-    while (this.#visited[this.#hand] === 1) {
-      this.#visited[this.#hand] = 0;
-      this.#hand = this.#nextIndexes[this.#hand];
-      if (this.#hand === 0) {
-        this.#hand = this.#tailIndex;
+    while (this.#visited[this.#handIndex] === 1) {
+      this.#visited[this.#handIndex] = 0;
+      this.#handIndex = this.#nextIndexes[this.#handIndex];
+      if (this.#handIndex === 0) {
+        this.#handIndex = this.#tailIndex;
       }
     }
-    this.#removeNode(this.#hand);
+    const nodeIndex = this.#handIndex;
+    this.#removeNode(nodeIndex);
+    this.#map.delete(this.#keys[nodeIndex]);
+    return nodeIndex;
   }
 
-  #getHeadIndex(): number {
-    const freeIndex = this.#getFree();
+  #setHeadIndex(headIndex: number) {
     if (this.#headIndex === 0) {
-      this.#tailIndex = freeIndex;
+      this.#tailIndex = headIndex;
     } else {
-      this.#nextIndexes[this.#headIndex] = freeIndex;
-      this.#previousIndexes[freeIndex] = this.#headIndex;
+      this.#nextIndexes[this.#headIndex] = headIndex;
+      this.#previousIndexes[headIndex] = this.#headIndex;
     }
-    this.#headIndex = freeIndex;
-    return freeIndex;
+    this.#headIndex = headIndex;
   }
 
   #removeNode(nodeIndex: number) {
@@ -226,15 +236,11 @@ export class SieveCache<K, V> implements Map<K, V> {
     } else if (nodeNextIndex !== 0) {
       this.#previousIndexes[nodeNextIndex] = nodePreviousIndex;
     }
-    if (this.#hand === nodeIndex) {
-      this.#hand = nodeNextIndex;
+    if (this.#handIndex === nodeIndex) {
+      this.#handIndex = nodeNextIndex;
     }
     this.#nextIndexes[nodeIndex] = 0;
     this.#previousIndexes[nodeIndex] = 0;
-    (this.#values as any)[nodeIndex] = undefined;
-    const key = this.#keys[nodeIndex];
-    this.#map.delete(key);
-    this.#addToFree(nodeIndex);
   }
 
   #addToFree(freeIndex: number): void {
@@ -246,11 +252,16 @@ export class SieveCache<K, V> implements Map<K, V> {
     this.#freeHeadIndex = freeIndex;
   }
 
-  #getFree(): number {
+  #getFreeIndex(): number {
     if (this.#freeIndex <= this.#maxSize) {
       this.#freeIndex += 1;
       return this.#freeIndex - 1;
     }
+    this.#getNextFreeIndex = this.#getFreeTailIndex;
+    return this.#getFreeTailIndex();
+  }
+
+  #getFreeTailIndex(): number {
     const freeIndex = this.#freeTailIndex;
     this.#freeTailIndex = this.#nextIndexes[freeIndex];
     if (this.#freeTailIndex === 0) {
