@@ -1,6 +1,6 @@
 {
   "name": "@neophi/sieve-cache",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Performant Map based cache using the SIEVE algorithm for eviction.",
   "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",
