@@ -2,8 +2,15 @@
   "name": "@neophi/sieve-cache",
   "version": "1.0.1",
   "description": "Performant Map based cache using the SIEVE algorithm for eviction.",
-  "main": "dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/mjs/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/mjs/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "types": "./dist/mjs/index.d.ts",
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -12,13 +19,13 @@
   "engines": {
     "node": ">=18"
   },
-  "type": "module",
   "files": [
     "dist"
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsc",
+    "build": "tsc && tsc --project tsconfig-cjs.json",
+    "postbuild": "./tools/packages.sh",
     "build:test": "tsc --project tsconfig-test.json",
     "pretest": "npm run clean && npm run build:test",
     "test": "env NODE_ENV=test node --experimental-test-coverage --test dist/test",

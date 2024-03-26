@@ -1,7 +1,7 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "dist/mjs",
     "declaration": true,
     "noEmitOnError": true
   },
